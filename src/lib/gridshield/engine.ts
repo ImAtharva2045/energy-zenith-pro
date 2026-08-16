@@ -46,7 +46,7 @@ const MIN_SAFE_FRACTION: Record<Criticality, number> = {
 export interface ZoneContext {
   workload: Workload;
   backupHours: number;
-  icuOccupancy?: number;
+  icuOccupancy?: number | undefined;
   criticalTasks: number;
   exposure: number; // 0-1 how exposed the zone is to the disaster
 }
