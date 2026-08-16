@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useGridshield } from "@/lib/gridshield/store";
 import { Panel, Tag, gridTone } from "@/components/gridshield/primitives";
