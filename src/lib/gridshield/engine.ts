@@ -296,14 +296,21 @@ export function buildRecommendation(
   const flexNote = cuts
     .map((c) => proposed.find((z) => z.id === c.id))
     .filter(Boolean)
-    .map((z) => `${z!.name} carries ${z!.flexibility.toLowerCase()} load flexibility and ${z!.criticality.toLowerCase()} criticality`)
+    .map((z) => `${z!.name} now scores DZPS ${z!.dzps}/100 with ${z!.flexibility.toLowerCase()} load flexibility and ${z!.criticality.toLowerCase()} criticality`)
     .join("; ");
 
+  // The narrative is driven by the highest-priority zone that gains power,
+  // falling back to the highest-scoring zone overall.
+  const driver =
+    gains
+      .map((g) => proposed.find((z) => z.id === g.id)!)
+      .sort((a, b) => b.dzps - a.dzps)[0] ?? top;
+
   const explanation =
-    `${headline} because ${top.name} priority is ${top.dzps}/100 (${priorityLevel(top.dzps)}), driven by ` +
+    `${headline} because ${driver.name} priority is ${driver.dzps}/100 (${priorityLevel(top.dzps)}), driven by ` +
     `${top.factors.slice(0, 3).map((f) => `${f.label.toLowerCase()} ${f.detail}`).join(", ")}. ` +
     (shortfall > 0
-      ? `Deliverable power is ${round1(shortfall)} MW short of predicted demand, so flexible load must absorb the deficit — ${flexNote}. `
+      ? `Deliverable power is ${round1(shortfall)} MW short of predicted demand, so lower-priority or more flexible load must absorb the deficit — ${flexNote}. `
       : `Freed capacity can now be returned to lower-priority zones — ${flexNote || "flexible load is restored first"}. `) +
     `Life-safety minimums for all Very High criticality zones remain fully protected.`;
 
