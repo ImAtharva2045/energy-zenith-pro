@@ -99,7 +99,11 @@ const now = () =>
 
 export function useGridshield() {
   const [scenario, setScenario] = useState<ScenarioState>(INITIAL_SCENARIO);
-  const [applied, setApplied] = useState<Record<string, number> | null>(null);
+  // Applied dispatch starts at the baseline optimum; it only moves when the
+  // operator approves / overrides, so pending recommendations stay visible.
+  const [applied, setApplied] = useState<Record<string, number>>(() =>
+    Object.fromEntries(runPipeline(INITIAL_SCENARIO).zones.map((z) => [z.id, z.allocatedPower])),
+  );
   const [log, setLog] = useState<LogEntry[]>([
     { time: now(), kind: "system", message: "GRIDSHIELD initialised — simulated 11 kV substation online." },
   ]);
@@ -109,10 +113,7 @@ export function useGridshield() {
   const pipeline = useMemo(() => runPipeline(scenario), [scenario]);
 
   // Applied dispatch = what the simulated grid is actually doing right now.
-  const appliedMap = useMemo(() => {
-    if (applied) return applied;
-    return Object.fromEntries(pipeline.zones.map((z) => [z.id, z.allocatedPower]));
-  }, [applied, pipeline.zones]);
+  const appliedMap = applied;
 
   const liveZones: ZoneResult[] = useMemo(
     () =>
@@ -147,32 +148,28 @@ export function useGridshield() {
   /** Any scenario mutation re-runs the whole loop and journals the change. */
   const updateScenario = useCallback(
     (fn: (s: ScenarioState) => ScenarioState, message?: string) => {
-      setScenario((prev) => {
-        const next = fn(structuredClone(prev));
-        if (message) {
-          const before = runPipeline(prev);
-          const after = runPipeline(next);
-          setLog((l) => {
-            const entries: LogEntry[] = [{ time: now(), kind: "scenario", message }];
-            after.zones.forEach((z) => {
-              const b = before.zones.find((x) => x.id === z.id)!;
-              if (Math.abs(b.dzps - z.dzps) >= 2)
-                entries.push({ time: now(), kind: "system", message: `${z.name} DZPS ${b.dzps} → ${z.dzps}.` });
-              if (Math.abs(b.predictedDemand - z.predictedDemand) >= 0.5)
-                entries.push({
-                  time: now(),
-                  kind: "system",
-                  message: `${z.name} predicted demand ${b.predictedDemand} → ${z.predictedDemand} MW.`,
-                });
-            });
-            return [...entries.reverse(), ...l].slice(0, 60);
-          });
-        }
-        return next;
-      });
+      const prev = scenario;
+      const next = fn(structuredClone(prev));
+      setScenario(next);
       setDecision("pending");
+      if (!message) return;
+      const before = runPipeline(prev);
+      const after = runPipeline(next);
+      const entries: LogEntry[] = [{ time: now(), kind: "scenario", message }];
+      after.zones.forEach((z) => {
+        const b = before.zones.find((x) => x.id === z.id)!;
+        if (Math.abs(b.dzps - z.dzps) >= 2)
+          entries.push({ time: now(), kind: "system", message: `${z.name} DZPS ${b.dzps} → ${z.dzps}.` });
+        if (Math.abs(b.predictedDemand - z.predictedDemand) >= 0.5)
+          entries.push({
+            time: now(),
+            kind: "system",
+            message: `${z.name} predicted demand ${b.predictedDemand} → ${z.predictedDemand} MW.`,
+          });
+      });
+      setLog((l) => [...entries.reverse(), ...l].slice(0, 60));
     },
-    [],
+    [scenario],
   );
 
   const reassess = useCallback(() => {
@@ -212,7 +209,7 @@ export function useGridshield() {
 
   const resetAll = useCallback(() => {
     setScenario(INITIAL_SCENARIO);
-    setApplied(null);
+    setApplied(Object.fromEntries(runPipeline(INITIAL_SCENARIO).zones.map((z) => [z.id, z.allocatedPower])));
     setDecision("pending");
     addLog("Scenario reset to baseline normal conditions.", "scenario");
   }, [addLog]);
@@ -234,7 +231,6 @@ export function useGridshield() {
     reassess,
     reassessedAt,
     resetAll,
-    followRecommendation: applied === null,
   };
 }
 
