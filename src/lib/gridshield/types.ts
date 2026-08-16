@@ -68,8 +68,8 @@ export interface ZoneResult extends ZoneInput {
   factors: ScoreFactor[];
   predictionFactors: PredictionFactor[];
   backupHours: number;
-  icuOccupancy?: number;
-  emergencyWorkload?: Workload;
+  icuOccupancy?: number | undefined;
+  emergencyWorkload?: Workload | undefined;
   disasterSeverity: number;
   allocatedPower: number;
   reduction: number;
