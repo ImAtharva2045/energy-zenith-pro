@@ -256,7 +256,7 @@ export function buildRecommendation(
     .filter((d) => Math.abs(d.deltaMw) >= 0.1)
     .sort((a, b) => Math.abs(b.deltaMw) - Math.abs(a.deltaMw));
 
-  const top = [...proposed].sort((a, b) => b.dzps - a.dzps)[0];
+  const top = [...proposed].sort((a, b) => b.dzps - a.dzps)[0]!;
   const cuts = deltas.filter((d) => d.deltaMw < 0);
   const gains = deltas.filter((d) => d.deltaMw > 0);
 
