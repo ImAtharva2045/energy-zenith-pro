@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useGridshield } from "@/lib/gridshield/store";
-import { Panel, Tag, gridTone } from "@/components/gridshield/primitives";
+import { Tag, gridTone } from "@/components/gridshield/primitives";
 import { ScenarioControls } from "@/components/gridshield/ScenarioControls";
 import { ZoneTable } from "@/components/gridshield/ZoneTable";
 import { RecommendationPanel } from "@/components/gridshield/RecommendationPanel";
@@ -76,7 +77,7 @@ function Dashboard() {
           </div>
         </header>
 
-        <div className="mx-auto max-w-[1600px] space-y-4 px-4 py-5">
+        <div className="mx-auto max-w-[1500px] space-y-4 px-4 py-5">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <Metric label="Available Power" value={String(pipeline.supply.deliverable)} unit="MW" />
             <Metric label="Predicted Total Demand" value={String(pipeline.totalPredicted)} unit="MW" />
@@ -94,53 +95,49 @@ function Dashboard() {
             />
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+          <div className="grid gap-4 xl:grid-cols-[330px_minmax(0,1fr)]">
             <div className="space-y-4">
               <ScenarioControls gs={gs} />
             </div>
 
             <div className="space-y-4">
               <RecommendationPanel gs={gs} />
-              <ZoneTable zones={liveZones} />
-              <div className="grid gap-4 lg:grid-cols-2">
-                <GridSchematic zones={liveZones} telemetry={telemetry} supply={pipeline.supply} />
-                <ActivityLog log={gs.log} />
-              </div>
-              <PredictionPanel zones={liveZones} />
-              <Analytics zones={liveZones} deliverable={pipeline.supply.deliverable} />
 
-              <Panel title="Scope & Honesty Statement">
-                <div className="grid gap-4 md:grid-cols-2 text-xs leading-relaxed text-muted-foreground">
-                  <div>
-                    <div className="label-caps mb-1 text-ok">Real implemented logic</div>
-                    <ul className="space-y-1">
-                      <li>Dynamic zone priority scoring (weighted, normalised 0–100)</li>
-                      <li>Constraint-aware allocation with life-safety minimums</li>
-                      <li>Scenario-driven reassessment of the full loop</li>
-                      <li>Explainable, value-derived recommendations</li>
-                      <li>Operator approve / reject / override control</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <div className="label-caps mb-1 text-warn">Simulated data</div>
-                    <ul className="space-y-1">
-                      <li>Substation readings ({scenario.grid.feederCapacity} MW feeder, 11 kV)</li>
-                      <li>Hospital, water plant, residential and commercial facility data</li>
-                      <li>Disaster severity, rainfall and affected-zone flags</li>
-                      <li>Solar generation, battery state of charge, grid measurements</li>
-                      <li>Near-term demand forecast (model-demo, not a trained model)</li>
-                    </ul>
-                  </div>
-                </div>
-                <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
-                  Phase-1 Proof of Concept — Simulated Grid &amp; Facility Data. No connection to real hospitals,
-                  utilities, SCADA systems or government APIs. Production deployment would require integration with
-                  utility SCADA/DMS, facility systems, verified network models and authorized control interfaces.
-                </p>
-              </Panel>
+              <Tabs defaultValue="allocation">
+                <TabsList className="w-full justify-start">
+                  <TabsTrigger value="allocation">Allocation</TabsTrigger>
+                  <TabsTrigger value="grid">Grid</TabsTrigger>
+                  <TabsTrigger value="forecast">Forecast</TabsTrigger>
+                  <TabsTrigger value="log">Activity Log</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="allocation" className="mt-4 space-y-4">
+                  <ZoneTable zones={liveZones} />
+                  <Analytics zones={liveZones} deliverable={pipeline.supply.deliverable} />
+                </TabsContent>
+
+                <TabsContent value="grid" className="mt-4">
+                  <GridSchematic zones={liveZones} telemetry={telemetry} supply={pipeline.supply} />
+                </TabsContent>
+
+                <TabsContent value="forecast" className="mt-4">
+                  <PredictionPanel zones={liveZones} />
+                </TabsContent>
+
+                <TabsContent value="log" className="mt-4">
+                  <ActivityLog log={gs.log} />
+                </TabsContent>
+              </Tabs>
+
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Phase-1 Proof of Concept — simulated {scenario.grid.feederCapacity} MW / 11 kV substation, facility and
+                disaster data. Scoring, allocation and the operator loop are real logic; no connection to live SCADA,
+                hospital or utility systems.
+              </p>
             </div>
           </div>
         </div>
+
       </main>
     </TooltipProvider>
   );

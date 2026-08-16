@@ -1,5 +1,5 @@
 /** GRIDSHIELD application state: scenario inputs + derived pipeline + operator actions. */
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   allocate,
   buildRecommendation,
@@ -105,10 +105,17 @@ export function useGridshield() {
     Object.fromEntries(runPipeline(INITIAL_SCENARIO).zones.map((z) => [z.id, z.allocatedPower])),
   );
   const [log, setLog] = useState<LogEntry[]>([
-    { time: now(), kind: "system", message: "GRIDSHIELD initialised — simulated 11 kV substation online." },
+    { time: "--:--:--", kind: "system", message: "GRIDSHIELD initialised — simulated 11 kV substation online." },
   ]);
   const [decision, setDecision] = useState<"pending" | "approved" | "rejected" | "override">("pending");
-  const [reassessedAt, setReassessedAt] = useState(() => now());
+  const [reassessedAt, setReassessedAt] = useState("--:--:--");
+
+  // Timestamps are client-only so SSR markup stays stable.
+  useEffect(() => {
+    const t = now();
+    setReassessedAt(t);
+    setLog((l) => l.map((e, i) => (i === 0 ? { ...e, time: t } : e)));
+  }, []);
 
   const pipeline = useMemo(() => runPipeline(scenario), [scenario]);
 
@@ -159,7 +166,7 @@ export function useGridshield() {
       after.zones.forEach((z) => {
         const b = before.zones.find((x) => x.id === z.id)!;
         if (Math.abs(b.dzps - z.dzps) >= 2)
-          entries.push({ time: now(), kind: "system", message: `${z.name} DZPS ${b.dzps} → ${z.dzps}.` });
+          entries.push({ time: "--:--:--", kind: "system", message: `${z.name} DZPS ${b.dzps} → ${z.dzps}.` });
         if (Math.abs(b.predictedDemand - z.predictedDemand) >= 0.5)
           entries.push({
             time: now(),
